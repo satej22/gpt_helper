@@ -8,6 +8,8 @@ import time
 import subprocess
 import platform
 import fnmatch
+import pyperclip
+import pyperclip
 
 
 class GPTAssist:
@@ -17,9 +19,20 @@ class GPTAssist:
             "url": [],
             "dir": [],
             "dir_ignore": [],
-            "hashes": []
+            "hashes": {}
         }
-        self.allowed_exts = {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py"}
+        self.allowed_exts = {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py", "Makefile", ".ld", ".S", ".p", ".pl", "*"}
+
+    def copy_to_clipboard(self, data):
+        """
+        Copies the given data to the system clipboard.
+        Requires the pyperclip module. Install with: pip install pyperclip
+        """
+        try:
+            pyperclip.copy(data)
+            print("Data successfully copied to clipboard.")
+        except ImportError:
+            print("pyperclip module is not installed. Unable to copy to clipboard. Do 'pip install pyperclip'")
 
     def print_status(self):
         print(f"Project Name : {self.project_name}")
@@ -139,7 +152,7 @@ class GPTAssist:
         Only files with allowed extensions are printed.
         The file contents are wrapped in triple backticks.
         """
-        allowed_exts = {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py"}
+        allowed_exts = self.allowed_exts # {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py"}
         for directory in self.context["dir"]:
             print(f"\n--- Scanning directory: {directory} ---")
             for root, dirs, files in os.walk(directory):
@@ -178,7 +191,7 @@ class GPTAssist:
                     continue
                 for file in files:
                     ext = os.path.splitext(file)[1].lower()
-                    if ext not in allowed_exts:
+                    if ext not in allowed_exts and "*" not in allowed_exts and ".*" not in allowed_exts:
                         continue
                     file_path = os.path.join(root, file)
                     try:
@@ -231,7 +244,7 @@ class GPTAssist:
                 lines.append(prefix + connector + entry)
         return lines
 
-    def prompt_first(self):
+    def prompt_first(self, print_it=True, copy_it=False):
         filecontents = self.read_file_contents()
         dircontents = self.read_directory_contents()
 
@@ -248,31 +261,34 @@ class GPTAssist:
 
         prompt = f""" # Project: {self.project_name}\n\n## Directory Structure\n\n{dircontents}\n\n## File Contents\n\n{filecontents_string}\n\n{urlcontents}\n\nPlease analyze the above project structure and file contents, and answer any queries regarding its functionality."""
 
-        print(prompt)
+        if print_it:
+            print(prompt)
+        if copy_it:
+            self.copy_to_clipboard(prompt)
 
     def hash(self, ob):
         return hashlib.md5(ob.encode('utf-8')).hexdigest()
 
     def update_hashes(self):
-        self.context["hashes"] = []
+        self.context["hashes"] = {}
         filecontents = self.read_file_contents()
         dircontents = self.read_directory_contents()
 
         h = self.hash(dircontents)
         if h not in self.context["hashes"]:
-            self.context["hashes"].append(h)
+            self.context["hashes"][h] = 1
 
         for filetuple in filecontents:
             h = self.hash(filetuple[1])
             if h not in self.context["hashes"]:
-                self.context["hashes"].append(h)
+                self.context["hashes"][h] = 1
 
         for url in self.context['url']:
             h = self.hash(url)
             if h not in self.context["hashes"]:
-                self.context["hashes"].append(h)
+                self.context["hashes"][h] = 1
 
-    def prompt_update(self):
+    def prompt_update(self, print_it=True, copy_it=False):
         filecontents = self.read_file_contents()
         dircontents = self.read_directory_contents()
 
@@ -297,10 +313,12 @@ class GPTAssist:
         if self.hash(dircontents) in self.context["hashes"]:
             dircontent_section = ""
 
-
         prompt = f""" # Project: {self.project_name}\n{dircontent_section}{filecontent_section}\n{urlcontents}\n\nPlease analyze the above updated project structure and file contents, and answer any queries regarding its functionality."""
 
-        print(prompt)
+        if print_it:
+            print(prompt)
+        if copy_it:
+            self.copy_to_clipboard(prompt)
 
 
 class Command:
@@ -352,14 +370,16 @@ project_name_comm = Command("-name", help_message="Project Name")
 add_dir_comm = Command("-dir+", inputs="Directory", help_message="Adds directory to watch-list")
 add_ignore_dir_comm = Command("-ignore+", inputs="Directory", help_message="Adds directory to ignore-list")
 remove_dir_comm = Command("-dir-", inputs="Directory", help_message="Removes this directory from watch-list")
-remove_ignore_dir_comm = Command("-ignore-", inputs="Directory",help_message="Removes this directory from ignore-list")
+remove_ignore_dir_comm = Command("-ignore-", inputs="Directory", help_message="Removes this directory from ignore-list")
 add_url_comm = Command("-url+", inputs="Url", help_message="Removes given url from watch-list")
 remove_url_comm = Command("-url-", inputs="Url", help_message="Removes given url from watch-list")
 print_all_comm = Command("-print", help_message="Prints directory structure and all the files")
 print_dir_structure_comm = Command("-printdir", help_message="Prints directory structure")
 status_comm = Command("-status", help_message="Prints current status")
-prompt_first_comm = Command("-prompt-first", help_message="Prints the first prompt")
-prompt_update_comm = Command("-prompt", help_message="Prints the updated prompt")
+prompt_first_copy_comm = Command("-prompt-first-copy", help_message="Copys the first prompt to clipboard")
+prompt_update_copy_comm = Command("-prompt-copy", help_message="Copys the updated prompt to clipboard")
+prompt_first_comm = Command("-prompt-first", help_message="Prints and copys the first prompt")
+prompt_update_comm = Command("-prompt", help_message="Prints and copys the updated prompt")
 update_comm = Command("-update", help_message="Updates the hashes")
 
 
@@ -559,16 +579,25 @@ GPT_Assist_Cmd_Prompt = Command_Control("GPT Assist")
 GPT_Assist_Cmd_Prompt.add_command(help_comm, project_name_comm, add_dir_comm, add_ignore_dir_comm, add_url_comm,
                                   status_comm, update_comm,
                                   remove_dir_comm, remove_ignore_dir_comm, remove_url_comm, print_all_comm,
-                                  print_dir_structure_comm, prompt_first_comm, prompt_update_comm)
+                                  print_dir_structure_comm,
+                                  prompt_first_copy_comm, prompt_update_copy_comm, prompt_first_comm,
+                                  prompt_update_comm)
 
 GPT_Assist_Cmd_Prompt.print_all_commands()
 
+default_ignore_list = [r"*venu*", r"*.git*", r"*.idea*", r"*.jpg", r"*.bmp", r"*.png", r"*.jpeg"]
+
+[gpt.add_ignore_dir(dir_path=a) for a in default_ignore_list]
+starttime_time = time.time()
+
 while True:
-    input_command = str(input("> "))
+    bookmark_time = time.time()
+    input_command = str(input(f"({str(int(time.time() - starttime_time)).zfill(3)} sec) > "))
     resolved_cmd = GPT_Assist_Cmd_Prompt.resolve_cmd("-" + input_command)
     # print(resolved_cmd)
     cmd = resolved_cmd[1]
     # print(type(cmd))
+
     if resolved_cmd[1] is None:
         print("Invalid Command")
     else:
@@ -604,13 +633,14 @@ while True:
                 gpt.prompt_update()
             if cmd.command_without_hyphen == project_name_comm.command_without_hyphen:
                 gpt.project_name = str(input("Enter the Project Name : "))
-
-
-
-
-
+            if cmd.command_without_hyphen == prompt_first_copy_comm.command_without_hyphen:
+                gpt.prompt_first(print_it=False, copy_it=True)
+            if cmd.command_without_hyphen == prompt_update_copy_comm.command_without_hyphen:
+                gpt.prompt_update(print_it=False, copy_it=True)
 
 
 
         else:
             print("Invalid Command Usage")
+#
+#
