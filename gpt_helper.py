@@ -320,6 +320,32 @@ class GPTAssist:
         if copy_it:
             self.copy_to_clipboard(prompt)
 
+    def save(self, path=None):
+        if not path:
+            path = input("Enter path to save the context (e.g., context.json): ").strip()
+        data = {
+            "project_name": self.project_name,
+            "context": self.context
+        }
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+            print(f"Context successfully saved to {path}.")
+        except Exception as e:
+            print(f"Error saving context: {e}")
+
+    def load(self, path=None):
+        if not path:
+            path = input("Enter path to load the context (e.g., context.json): ").strip()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.project_name = data.get("project_name", "")
+            self.context = data.get("context", self.context)
+            print(f"Context successfully loaded from {path}.")
+        except Exception as e:
+            print(f"Error loading context: {e}")
+
 
 class Command:
     def __init__(self, command="", required_commands=None, optional_commands=None, inputs=None, help_message="",
@@ -381,7 +407,8 @@ prompt_update_copy_comm = Command("-prompt-copy", help_message="Copys the update
 prompt_first_comm = Command("-prompt-first", help_message="Prints and copys the first prompt")
 prompt_update_comm = Command("-prompt", help_message="Prints and copys the updated prompt")
 update_comm = Command("-update", help_message="Updates the hashes")
-
+save_comm = Command("-save", help_message="Saves the context")
+load_comm = Command("-load", help_message="Loads the context")
 
 class Command_Control:
     def __init__(self, header="", logfile=None):
@@ -581,7 +608,7 @@ GPT_Assist_Cmd_Prompt.add_command(help_comm, project_name_comm, add_dir_comm, ad
                                   remove_dir_comm, remove_ignore_dir_comm, remove_url_comm, print_all_comm,
                                   print_dir_structure_comm,
                                   prompt_first_copy_comm, prompt_update_copy_comm, prompt_first_comm,
-                                  prompt_update_comm)
+                                  prompt_update_comm, save_comm, load_comm)
 
 GPT_Assist_Cmd_Prompt.print_all_commands()
 
@@ -637,6 +664,10 @@ while True:
                 gpt.prompt_first(print_it=False, copy_it=True)
             if cmd.command_without_hyphen == prompt_update_copy_comm.command_without_hyphen:
                 gpt.prompt_update(print_it=False, copy_it=True)
+            if cmd.command_without_hyphen == save_comm.command_without_hyphen:
+                gpt.save()
+            if cmd.command_without_hyphen == load_comm.command_without_hyphen:
+                gpt.load()
 
 
 
