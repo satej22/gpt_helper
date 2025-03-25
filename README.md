@@ -18,4 +18,4 @@ It supports clipboard integration, smart file filtering, and change detection to
 This is a standalone script — no installation needed! Just download the file and run it:
 
 ```bash
-python gpt_helper.py
+python gpthelper.py
