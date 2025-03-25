@@ -8,10 +8,10 @@ Python 3.x
 
 **Installation**
 
-This is a standalone Python script. Simply download the file (gpt_helper.py) and run it using Python:
+This is a standalone Python script. Simply download the file (gpthelper.py) and run it using Python:
 
 ```
-python gpt_helper.py
+python gpthelper.py
 ```
 
 **Usage**
