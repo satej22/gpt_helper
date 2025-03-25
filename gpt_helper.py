@@ -22,7 +22,6 @@ class GPTAssist:
             "allowed_extensions": {"*": 0}
         }
 
-        self.allowed_exts = self.context["allowed_extensions"]
 
     def copy_to_clipboard(self, data):
         """
@@ -57,25 +56,22 @@ class GPTAssist:
         for u in self.context["url"]:
             print(prefix, u)
         print("Allowed Extensions:")
-        print(prefix, list(self.allowed_exts.keys()))
+        print(prefix, list(self.context["allowed_extensions"].keys()))
 
     def add_extension(self, extension=None):
         if not extension:
-            extension = input(f"Enter extension to add to allowed list:({list(self.allowed_exts.keys())}): ").strip()
+            extension = input(f"Enter extension to add to allowed list:({list(self.context['allowed_extensions'].keys())}): ").strip()
         if extension not in self.context["allowed_extensions"]:
             self.context["allowed_extensions"][extension] = 0
-            self.allowed_exts = self.context["allowed_extensions"]
-
             print(f"Added extension '{extension}' to allowed list.")
         else:
             print(f"Extension '{extension}' is already in the allowed list.")
 
     def remove_extension(self, extension=None):
         if not extension:
-            extension = input(f"Enter Extension to remove from allowed list:({list(self.allowed_exts.keys())}): ").strip()
+            extension = input(f"Enter Extension to remove from allowed list:({list(self.context['allowed_extensions'].keys())}): ").strip()
         if extension in self.context["allowed_extensions"]:
             del self.context["allowed_extensions"][extension]
-            self.allowed_exts = self.context["allowed_extensions"]
             print(f"Removed extension '{extension}' from allowed list.")
         else:
             print(f"Extension '{extension}' not found in allowed list.")
@@ -184,7 +180,7 @@ class GPTAssist:
         Only files with allowed extensions are printed.
         The file contents are wrapped in triple backticks.
         """
-        allowed_exts = self.allowed_exts  # {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py"}
+        allowed_exts = self.context['allowed_extensions']
         for directory in self.context["dir"]:
             print(f"\n--- Scanning directory: {directory} ---")
             for root, dirs, files in os.walk(directory):
@@ -211,7 +207,7 @@ class GPTAssist:
                     print(f"--- End of {file_path} ---")
 
     def read_file_contents(self):
-        allowed_exts = self.allowed_exts
+        allowed_exts = self.context['allowed_extensions']
 
         results = []
         for directory in self.context["dir"]:
@@ -374,7 +370,6 @@ class GPTAssist:
                 data = json.load(f)
             self.project_name = data.get("project_name", "")
             self.context = data.get("context", self.context)
-            self.allowed_exts = self.context["allowed_extensions"]
             print(f"Context successfully loaded from {path}.")
         except Exception as e:
             print(f"Error loading context: {e}")
