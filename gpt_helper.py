@@ -374,6 +374,7 @@ class GPTAssist:
                 data = json.load(f)
             self.project_name = data.get("project_name", "")
             self.context = data.get("context", self.context)
+            self.allowed_exts = self.context["allowed_extensions"]
             print(f"Context successfully loaded from {path}.")
         except Exception as e:
             print(f"Error loading context: {e}")
