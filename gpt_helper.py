@@ -8,8 +8,7 @@ import time
 import subprocess
 import platform
 import fnmatch
-import pyperclip
-import pyperclip
+import tkinter as tk
 
 
 class GPTAssist:
@@ -19,23 +18,32 @@ class GPTAssist:
             "url": [],
             "dir": [],
             "dir_ignore": [],
-            "hashes": {}
+            "hashes": {},
+            "allowed_extensions": {"*": 0}
         }
-        self.allowed_exts = {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py", "Makefile", ".ld", ".S", ".p", ".pl", "*"}
+
+        self.allowed_exts = self.context["allowed_extensions"]
 
     def copy_to_clipboard(self, data):
         """
-        Copies the given data to the system clipboard.
-        Requires the pyperclip module. Install with: pip install pyperclip
+        Copy a string to the system clipboard using only built‑in modules.
+        Works cross‑platform (Windows, macOS, Linux).
         """
+
         try:
-            pyperclip.copy(data)
+            root = tk.Tk()
+            root.withdraw()  # hide the main window
+            root.clipboard_clear()  # clear current clipboard contents
+            root.clipboard_append(data)  # append new text
+            root.update()  # now it stays on the clipboard after the window closes
+            root.destroy()
             print("Data successfully copied to clipboard.")
-        except ImportError:
-            print("pyperclip module is not installed. Unable to copy to clipboard. Do 'pip install pyperclip'")
+        except Exception as e:
+            print(f"Failed to copy to clipboard: {e}")
 
     def print_status(self):
         print(f"Project Name : {self.project_name}")
+
         prefix = "-" * 2
         prefix2 = prefix * 2
         print("Dirs:")
@@ -48,6 +56,30 @@ class GPTAssist:
         print("Urls:")
         for u in self.context["url"]:
             print(prefix, u)
+        print("Allowed Extensions:")
+        print(prefix, list(self.allowed_exts.keys()))
+
+    def add_extension(self, extension=None):
+        if not extension:
+            extension = input(f"Enter extension to add to allowed list:({list(self.allowed_exts.keys())}): ").strip()
+        if extension not in self.context["allowed_extensions"]:
+            self.context["allowed_extensions"][extension] = 0
+            self.allowed_exts = self.context["allowed_extensions"]
+
+            print(f"Added extension '{extension}' to allowed list.")
+        else:
+            print(f"Extension '{extension}' is already in the allowed list.")
+
+    def remove_extension(self, extension=None):
+        if not extension:
+            extension = input(f"Enter Extension to remove from allowed list:({list(self.allowed_exts.keys())}): ").strip()
+        if extension in self.context["allowed_extensions"]:
+            del self.context["allowed_extensions"][extension]
+            self.allowed_exts = self.context["allowed_extensions"]
+            print(f"Removed extension '{extension}' from allowed list.")
+        else:
+            print(f"Extension '{extension}' not found in allowed list.")
+
 
     def add_dir(self, dir_path=None):
         if not dir_path:
@@ -152,7 +184,7 @@ class GPTAssist:
         Only files with allowed extensions are printed.
         The file contents are wrapped in triple backticks.
         """
-        allowed_exts = self.allowed_exts # {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py"}
+        allowed_exts = self.allowed_exts  # {".html", ".xml", ".csv", ".json", ".txt", ".sh", ".h", ".c", ".py"}
         for directory in self.context["dir"]:
             print(f"\n--- Scanning directory: {directory} ---")
             for root, dirs, files in os.walk(directory):
@@ -163,7 +195,7 @@ class GPTAssist:
                 print(f"\nDirectory: {root}")
                 for file in files:
                     ext = os.path.splitext(file)[1].lower()
-                    if ext not in allowed_exts:
+                    if ext not in allowed_exts or "*" not in allowed_exts or ".*" not in allowed_exts:
                         continue
                     file_path = os.path.join(root, file)
                     print(f"\n--- {file_path} ---")
@@ -399,7 +431,9 @@ remove_dir_comm = Command("-dir-", inputs="Directory", help_message="Removes thi
 remove_ignore_dir_comm = Command("-ignore-", inputs="Directory", help_message="Removes this directory from ignore-list")
 add_url_comm = Command("-url+", inputs="Url", help_message="Removes given url from watch-list")
 remove_url_comm = Command("-url-", inputs="Url", help_message="Removes given url from watch-list")
-print_all_comm = Command("-print", help_message="Prints directory structure and all the files")
+add_extension_comm = Command("-extension+", help_message="Removes given extension from allowed-list")
+remove_extension_comm = Command("-extension-", help_message="Removes given extension from allowed-list")
+print_all_comm = Command("-print", help_message="Prints directory structure and contents of all the files")
 print_dir_structure_comm = Command("-printdir", help_message="Prints directory structure")
 status_comm = Command("-status", help_message="Prints current status")
 prompt_first_copy_comm = Command("-prompt-first-copy", help_message="Copys the first prompt to clipboard")
@@ -409,6 +443,7 @@ prompt_update_comm = Command("-prompt", help_message="Prints and copys the updat
 update_comm = Command("-update", help_message="Updates the hashes")
 save_comm = Command("-save", help_message="Saves the context")
 load_comm = Command("-load", help_message="Loads the context")
+
 
 class Command_Control:
     def __init__(self, header="", logfile=None):
@@ -604,7 +639,7 @@ gpt = GPTAssist()
 GPT_Assist_Cmd_Prompt = Command_Control("GPT Assist")
 
 GPT_Assist_Cmd_Prompt.add_command(help_comm, project_name_comm, add_dir_comm, add_ignore_dir_comm, add_url_comm,
-                                  status_comm, update_comm,
+                                  add_extension_comm,status_comm, update_comm, remove_extension_comm,
                                   remove_dir_comm, remove_ignore_dir_comm, remove_url_comm, print_all_comm,
                                   print_dir_structure_comm,
                                   prompt_first_copy_comm, prompt_update_copy_comm, prompt_first_comm,
@@ -612,7 +647,9 @@ GPT_Assist_Cmd_Prompt.add_command(help_comm, project_name_comm, add_dir_comm, ad
 
 GPT_Assist_Cmd_Prompt.print_all_commands()
 
-default_ignore_list = [r"*venu*", r"*.git*", r"*.idea*", r"*.jpg", r"*.bmp", r"*.png", r"*.jpeg"]
+default_ignore_list = [r"*venu*",r"*venv*", r"*.git*", r"*.idea*", r"*.jpg", r"*.bmp", r"*.png", r"*.jpeg",
+                       r"*.pdf", r"*LICENSE", r"*.zip"]
+
 
 [gpt.add_ignore_dir(dir_path=a) for a in default_ignore_list]
 starttime_time = time.time()
@@ -668,6 +705,10 @@ while True:
                 gpt.save()
             if cmd.command_without_hyphen == load_comm.command_without_hyphen:
                 gpt.load()
+            if cmd.command_without_hyphen == add_extension_comm.command_without_hyphen:
+                gpt.add_extension()
+            if cmd.command_without_hyphen == remove_extension_comm.command_without_hyphen:
+                gpt.remove_extension()
 
 
 
