@@ -21,7 +21,7 @@ This is a standalone script — no installation needed! Just download the file a
 python gpthelper.py
 ```
 
-💡 Usage
+## 💡 Usage
 After launching, you'll be greeted with an interactive prompt. Type any of the following commands:
 
 Command	Description
@@ -46,36 +46,32 @@ Command	Description
 -load	Load project context from .json
 ☝️ If no argument is passed to a command, the program will interactively ask you for input.
 
-✨ Features
+## ✨ Features
+
 ✅ Clipboard Integration
 Copy generated prompts to your system clipboard using tkinter.
 
 📂 Directory & File Management
 Add/remove directories to monitor
-
 Tree-like structure output
-
 Ignore directories/patterns
 
 📄 File Content Display
 View contents of files with allowed extensions
-
 Markdown-wrapped output for LLM compatibility
 
 🌐 URL Support
 Track URLs related to your project
-
 Include them in prompt generation
 
 🔄 Change Detection
 Smart hashing to detect file/directory changes
-
 -prompt only shows what's new
 
-📃 License
+## 📃 License
 This project is licensed under the MIT License. See the LICENSE file for full details.
 
-🤝 Contributing
+## 🤝 Contributing
 Contributions and suggestions are welcome!
 Feel free to open an issue or submit a pull request 💡
 
