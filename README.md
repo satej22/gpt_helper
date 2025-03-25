@@ -23,7 +23,6 @@ python gpthelper.py
 
 ## 💡 Usage
 After launching, you'll be greeted with an interactive prompt. Type any of the following commands:
-
 Command	Description
 -h	Show help and list all available commands
 -name	Set project name
@@ -45,6 +44,7 @@ Command	Description
 -save	Save project context to .json
 -load	Load project context from .json
 ☝️ If no argument is passed to a command, the program will interactively ask you for input.
+You can ignore prefix  **-** (dash) while giving command. 
 
 ## ✨ Features
 
